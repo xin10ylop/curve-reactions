@@ -1,0 +1,4 @@
+# Pinned to major versions (only the standard scientific-Python trio is used).
+requests>=2.31,<3
+pandas>=2.2,<4
+matplotlib>=3.8,<4
