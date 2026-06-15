@@ -1,0 +1,30 @@
+name: CI
+
+# Lightweight check: confirm the code byte-compiles and every module imports.
+# It does NOT run the full pipeline and needs no secrets — there is deliberately
+# no FRED_API_KEY in CI (the key is only required at run time to download data).
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  compile-and-import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Byte-compile all modules
+        run: python -m py_compile config.py fetch_yields.py fetch_events.py analysis.py charts.py report.py main.py
+
+      - name: Import smoke-test (no API key required)
+        run: python -c "import config, fetch_yields, fetch_events, analysis, charts, report, main; print('all modules import OK')"
