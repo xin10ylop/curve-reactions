@@ -76,6 +76,7 @@ def _summary_paragraph(results: dict, start: str, end: str, n_days: int) -> str:
     headline = results["headline"]
 
     def mult(event: str, tenor: str) -> str:
+        """Format an event/tenor reaction multiple as 'N.Nx' (or 'n/a')."""
         value = headline["multiples"].get(event, {}).get(tenor, float("nan"))
         return f"{value:.1f}x" if value == value else "n/a"
 
@@ -99,6 +100,7 @@ def _summary_paragraph(results: dict, start: str, end: str, n_days: int) -> str:
 # --- Markdown ----------------------------------------------------------------
 
 def _md_table(headers: list[str], rows: list[list[str]]) -> str:
+    """Render a GitHub-flavoured Markdown table from headers and string rows."""
     lines = ["| " + " | ".join(headers) + " |",
              "| " + " | ".join("---" for _ in headers) + " |"]
     lines += ["| " + " | ".join(row) + " |" for row in rows]
@@ -106,11 +108,13 @@ def _md_table(headers: list[str], rows: list[list[str]]) -> str:
 
 
 def _regime_rows(regimes: pd.DataFrame) -> list[list[str]]:
+    """Turn the event×regime count table into string rows for rendering."""
     return [[event] + [str(int(regimes.loc[event, col])) for col in regimes.columns]
             for event in regimes.index]
 
 
 def _write_markdown(results: dict, start: str, end: str, generated: str) -> None:
+    """Write output/REPORT.md (summary, tables, embedded charts, methodology)."""
     n_days = len(results["changes"])
     regimes = results["regimes"]
     stats_table = _md_table(_STATS_HEADERS, _combined_rows(results))
@@ -190,6 +194,7 @@ footer { margin-top: 2.5em; padding-top: 1em; border-top: 1px solid var(--line);
 
 
 def _html_table(headers: list[str], rows: list[list[str]]) -> str:
+    """Render an HTML table from headers and string rows."""
     head = "".join(f"<th>{h}</th>" for h in headers)
     body = "".join("<tr>" + "".join(f"<td>{c}</td>" for c in row) + "</tr>" for row in rows)
     return f"<table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
@@ -201,6 +206,7 @@ def _data_uri(path: Path) -> str:
 
 
 def _write_html(results: dict, start: str, end: str, generated: str) -> None:
+    """Write the self-contained output/report.html (inline base64 charts, no JS)."""
     n_days = len(results["changes"])
     regimes = results["regimes"]
     stats_table = _html_table(_STATS_HEADERS, _combined_rows(results))

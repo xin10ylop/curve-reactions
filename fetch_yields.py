@@ -30,18 +30,29 @@ def _fetch_series(series_id: str, start: str, end: str, api_key: str) -> pd.Seri
     start, end : ISO date strings (YYYY-MM-DD) bounding the observation window.
     api_key : FRED API key, read from the environment by the caller.
     """
-    resp = requests.get(
-        config.FRED_BASE_URL,
-        params={
-            "series_id": series_id,
-            "api_key": api_key,
-            "file_type": "json",
-            "observation_start": start,
-            "observation_end": end,
-        },
-        timeout=config.HTTP_TIMEOUT,
-    )
-    resp.raise_for_status()
+    try:
+        resp = requests.get(
+            config.FRED_BASE_URL,
+            params={
+                "series_id": series_id,
+                "api_key": api_key,
+                "file_type": "json",
+                "observation_start": start,
+                "observation_end": end,
+            },
+            timeout=config.HTTP_TIMEOUT,
+        )
+    except requests.RequestException as exc:
+        # Never surface the original message: it contains the request URL,
+        # which includes "api_key=...". Raise a clean, key-free error instead.
+        raise RuntimeError(
+            f"FRED request for {series_id} failed: {type(exc).__name__} "
+            "(check network connectivity and FRED availability)."
+        ) from None
+    if resp.status_code != 200:
+        raise RuntimeError(
+            f"FRED request for {series_id} failed with HTTP {resp.status_code}."
+        )
     observations = resp.json().get("observations", [])
 
     dates: list[pd.Timestamp] = []
