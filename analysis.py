@@ -125,6 +125,7 @@ def classify_regimes(changes: pd.DataFrame, tags: pd.Series) -> pd.DataFrame:
     deadband = config.REGIME_DEADBAND_BPS
 
     def regime(d2: float, d30: float) -> str:
+        """Map a (2y, 30y) bp-change pair to a regime label, applying the dead-band."""
         down2, down30 = d2 < -deadband, d30 < -deadband
         up2, up30 = d2 > deadband, d30 > deadband
         if down2 and down30:
@@ -142,7 +143,10 @@ def classify_regimes(changes: pd.DataFrame, tags: pd.Series) -> pd.DataFrame:
         d2, d30 = changes.loc[ts, "2y_chg"], changes.loc[ts, "30y_chg"]
         if pd.isna(d2) or pd.isna(d30):
             continue
-        table.loc[category, regime(d2, d30)] += 1
+        # Round away floating-point noise (a 1 bp move can surface as
+        # -1.0000000000000231) so the dead-band comparison is deterministic at
+        # the boundary instead of being decided by representation error.
+        table.loc[category, regime(round(d2, 6), round(d30, 6))] += 1
     table.index.name = "event"
     return table
 

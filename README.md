@@ -118,8 +118,7 @@ releases**, and the tool reflects that reality.
 
 ## Attribution
 
-This product uses the FRED® API but is not endorsed or certified by the Federal
-Reserve Bank of St. Louis.
+This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis.
 
 The cached raw data (`data/yields.csv`) is for local, personal, educational use
 only and is never committed or redistributed; the reports contain only charts

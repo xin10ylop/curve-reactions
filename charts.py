@@ -8,6 +8,7 @@ raw observations are never embedded.
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 import matplotlib
 matplotlib.use("Agg")  # headless, deterministic rendering — no display needed
@@ -16,18 +17,22 @@ import pandas as pd  # noqa: E402
 
 import config  # noqa: E402
 
+if TYPE_CHECKING:  # type-only imports for annotations; no runtime import cost
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
+
 log = logging.getLogger(__name__)
 
 _TENOR_COLORS = {"2y": "#1f77b4", "10y": "#ff7f0e", "30y": "#2ca02c"}
 
 
-def _citation(fig) -> None:
+def _citation(fig: Figure) -> None:
     """Print the required FRED source citation under a figure."""
     fig.text(0.5, 0.01, config.FRED_SOURCE_CITATION, ha="center", va="bottom",
              fontsize=6.5, color="#555555", wrap=True)
 
 
-def _grouped_bars(ax, pivot: pd.DataFrame) -> None:
+def _grouped_bars(ax: Axes, pivot: pd.DataFrame) -> None:
     """Draw one bar per tenor for each row of ``pivot`` (index = event type)."""
     width = 0.25
     positions = range(len(pivot.index))
