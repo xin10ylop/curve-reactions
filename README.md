@@ -25,28 +25,6 @@ As an example finding, on jobs-report days the 2 year yield moves about 1.9 time
 
 The tool downloads daily Treasury yields from FRED (the St. Louis Fed data service) and the release dates from the official BLS and Federal Reserve calendars. It then computes the daily moves, labels each day by event type, runs the statistics, and writes the report. One command does the whole thing, and the analysis is plain repeatable math with no manual steps.
 
-## Run it yourself (optional)
-
-This section is only for reproducing the numbers or changing the date range. If you just want to read the results, open the live page above instead.
-
-You need a free FRED API key, which takes about a minute to get:
-https://fred.stlouisfed.org/docs/api/api_key.html
-
-```bash
-export FRED_API_KEY=your_key_here
-pip install -r requirements.txt
-python main.py
-```
-
-Other options:
-
-```bash
-python main.py --start 2020-01-01   # change the start date
-python main.py --refresh            # re-download the data
-```
-
-The report is saved to `output/report.html` and `output/REPORT.md`. The key is read only from the environment. It is never written into the code, the data files, or the report.
-
 ## Project layout
 
 ```
@@ -64,13 +42,6 @@ main.py          runs everything end to end
 - Treasury yields: FRED series DGS2, DGS10, DGS30 (Federal Reserve Bank of St. Louis).
 - CPI and jobs-report dates: the BLS release calendar, https://www.bls.gov/schedule/.
 - Fed decision dates: the Federal Reserve FOMC calendar.
-
-## Ideas for later
-
-- Add surprise data: how far each report beat or missed forecasts.
-- Use intraday prices instead of close-to-close.
-- Apply the same method to other countries' government bonds.
-- Add a small interactive web app.
 
 ## Data use and credit
 
