@@ -8,6 +8,7 @@ this module.
 from __future__ import annotations
 
 import os
+from datetime import date, timedelta
 from pathlib import Path
 
 # --- FRED: daily Treasury constant-maturity yields ---------------------------
@@ -78,6 +79,7 @@ REGIME_DEADBAND_BPS = 1.0    # moves smaller than this count as flat
 EVENT_TYPES = ("CPI", "NFP", "FOMC")  # single-event categories
 MULTI_TAG = "MULTI"
 NORMAL_TAG = "NORMAL"
+SMALL_SAMPLE_THRESHOLD = 12  # event-day count below which reaction multiples are flagged noisy
 
 # Sanity-check bounds.
 YIELD_MIN_PCT, YIELD_MAX_PCT = 0.0, 15.0
@@ -92,6 +94,29 @@ FOMC_COUNT_PER_FULL_YEAR = (7, 8)
 # --- Dates -------------------------------------------------------------------
 DEFAULT_START = "2018-01-01"
 
+
+def resolve_windows(start: str, end: str) -> list[dict[str, str]]:
+    """Return the ordered, named analysis windows as dicts of key/label/start/end.
+
+    ``start`` and ``end`` are ISO dates bounding the full-history (default) window
+    and the fetched data. The fixed "era" windows are constant; the rolling and
+    "...-today" windows are derived from ``end`` (the as-of date). Every window is
+    later sliced from one shared dataset, so this only defines date ranges.
+    """
+    end_date = date.fromisoformat(end)
+    start_year = date.fromisoformat(start).year
+    return [
+        {"key": "full", "label": f"Full history ({start_year}–today)", "start": start, "end": end},
+        {"key": "y2019", "label": "2019 mid-cycle cuts", "start": "2019-01-01", "end": "2019-12-31"},
+        {"key": "y2020", "label": "2020 COVID shock", "start": "2020-01-01", "end": "2020-12-31"},
+        {"key": "y2021", "label": "2021 inflation build-up", "start": "2021-01-01", "end": "2021-12-31"},
+        {"key": "y2022_23", "label": "2022–23 hiking cycle", "start": "2022-01-01", "end": "2023-12-31"},
+        {"key": "y2024", "label": "2024 pivot to cuts", "start": "2024-01-01", "end": "2024-12-31"},
+        {"key": "y2025_today", "label": "2025–today (shutdown era)", "start": "2025-01-01", "end": end},
+        {"key": "last12m", "label": "Last 12 months", "start": (end_date - timedelta(days=365)).isoformat(), "end": end},
+        {"key": "last3m", "label": "Last 3 months", "start": (end_date - timedelta(days=90)).isoformat(), "end": end},
+    ]
+
 # --- File locations ----------------------------------------------------------
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
@@ -105,6 +130,7 @@ CHART_BOX_2Y = OUTPUT_DIR / "chart3_box_2y.png"
 CHART_SPREAD = OUTPUT_DIR / "chart4_2s10s_spread.png"
 REPORT_MD = OUTPUT_DIR / "REPORT.md"
 REPORT_HTML = OUTPUT_DIR / "report.html"
+DOCS_INDEX = ROOT / "docs" / "index.html"  # published, self-contained GitHub Pages copy
 
 # --- Attribution (required by FRED terms; do not change the wording) ----------
 FRED_ATTRIBUTION = (

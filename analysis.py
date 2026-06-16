@@ -170,16 +170,12 @@ def _headline_numbers(stats: pd.DataFrame, multiples: pd.DataFrame,
     return headline
 
 
-def run_analysis(yields: pd.DataFrame, events: dict) -> dict:
-    """Run the full analysis pipeline and return every artifact charts/report need."""
-    changes = compute_changes(yields)
-    tags = tag_days(changes, events)
+def _analyze_from(changes: pd.DataFrame, tags: pd.Series) -> dict:
+    """Assemble statistics, multiples, regimes and headline figures from one slice."""
     stats = reaction_stats(changes, tags)
     multiples = reaction_multiples(stats)
     regimes = classify_regimes(changes, tags)
     headline = _headline_numbers(stats, multiples, tags)
-    log.info("Analysis: %d trading days; tag counts %s",
-             len(changes), tags.value_counts().to_dict())
     return {
         "changes": changes,
         "tags": tags,
@@ -188,3 +184,51 @@ def run_analysis(yields: pd.DataFrame, events: dict) -> dict:
         "regimes": regimes,
         "headline": headline,
     }
+
+
+def run_analysis(yields: pd.DataFrame, events: dict) -> dict:
+    """Run the full analysis on every supplied trading day (used for REPORT.md)."""
+    changes = compute_changes(yields)
+    tags = tag_days(changes, events)
+    log.info("Analysis: %d trading days; tag counts %s",
+             len(changes), tags.value_counts().to_dict())
+    return _analyze_from(changes, tags)
+
+
+def run_windows(yields: pd.DataFrame, events: dict,
+                windows: list[dict]) -> dict[str, dict]:
+    """Analyse each named window by slicing one shared changes/tags frame.
+
+    Daily changes are computed once on the full dataset, so an event on a
+    window's first day still references its true previous trading day. Each
+    window's statistics are then computed only on the rows within its date
+    range. Methodology is identical to ``run_analysis``; only the row subset
+    differs. Empty windows are skipped with a warning.
+    """
+    changes = compute_changes(yields)
+    tags = tag_days(changes, events)
+    results: dict[str, dict] = {}
+    for window in windows:
+        start, end = pd.Timestamp(window["start"]), pd.Timestamp(window["end"])
+        mask = (changes.index >= start) & (changes.index <= end)
+        if not bool(mask.any()):
+            log.warning("Window '%s' (%s..%s) has no trading days; skipping",
+                        window["key"], window["start"], window["end"])
+            continue
+        result = _analyze_from(changes.loc[mask], tags.loc[mask])
+        result["window"] = window
+        results[window["key"]] = result
+        log.info("Window '%s': %d trading days", window["key"], int(mask.sum()))
+    return results
+
+
+def small_sample_types(stats: pd.DataFrame, threshold: int) -> list[tuple[str, int]]:
+    """Return (event_type, n) for single-event types with fewer than ``threshold`` days."""
+    out: list[tuple[str, int]] = []
+    for event in config.EVENT_TYPES:
+        sub = stats[(stats["event"] == event) & (stats["tenor"] == config.TENORS[0])]
+        if not sub.empty:
+            n = int(sub["n"].iloc[0])
+            if n < threshold:
+                out.append((event, n))
+    return out
